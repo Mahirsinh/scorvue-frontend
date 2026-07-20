@@ -1,0 +1,249 @@
+/* index.css - Complete corrected CSS with light/premium theme */
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  /* Premium Blue/Indigo color palette */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+
+  --color-secondary-50: #eef2ff;
+  --color-secondary-100: #e0e7ff;
+  --color-secondary-200: #c7d2fe;
+  --color-secondary-300: #a5b4fc;
+  --color-secondary-400: #818cf8;
+  --color-secondary-500: #6366f1;
+  --color-secondary-600: #4f46e5;
+  --color-secondary-700: #4338ca;
+  --color-secondary-800: #3730a3;
+  --color-secondary-900: #312e81;
+  --color-secondary-950: #1e1b4b;
+
+  --color-surface-50: #fafafa;
+  --color-surface-100: #f5f5f5;
+  --color-surface-200: #e5e5e5;
+  --color-surface-300: #d4d4d4;
+  --color-surface-400: #a3a3a3;
+  --color-surface-500: #737373;
+  --color-surface-600: #525252;
+  --color-surface-700: #404040;
+  --color-surface-800: #262626;
+  --color-surface-900: #171717;
+  --color-surface-950: #0a0a0a;
+}
+
+@layer base {
+  html {
+    @apply bg-white;
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    @apply font-sans bg-white text-surface-700 selection:bg-primary-500/30 selection:text-primary-100 min-h-screen;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @media print {
+    html,
+    body {
+      background-color: white !important;
+    }
+
+    canvas {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+
+    * {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .bg-glow {
+      display: none !important;
+    }
+
+    .glass-card {
+      background-color: white !important;
+      box-shadow: none !important;
+      transform: none !important;
+      border-color: var(--color-surface-200) !important;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display font-bold text-surface-900;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-surface-200/50 shadow-xl shadow-surface-200/30;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    isolation: isolate;
+  }
+
+  .glass-input {
+    @apply w-full bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-300 text-surface-900 placeholder:text-surface-400;
+  }
+
+  .btn-primary {
+    @apply relative overflow-hidden bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white font-bold py-3.5 px-8 rounded-xl transition-all duration-300 active:scale-[0.98] shadow-lg shadow-primary-500/30 cursor-pointer text-sm tracking-wide;
+  }
+
+  .btn-secondary {
+    @apply relative overflow-hidden bg-surface-100 hover:bg-surface-200 text-surface-700 border border-surface-200 font-bold py-3.5 px-8 rounded-xl transition-all duration-300 active:scale-[0.98] cursor-pointer text-sm tracking-wide;
+  }
+
+  .premium-badge {
+    @apply bg-gradient-to-r from-primary-600 to-secondary-600 text-white text-[10px] font-bold px-4 py-1 rounded-full shadow-lg shadow-primary-500/30 tracking-wider uppercase;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-secondary-600;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-800;
+  }
+
+  .gradient-bg-light {
+    @apply bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-700;
+  }
+
+  .input-label {
+    @apply text-[11px] font-bold uppercase tracking-wider text-surface-500 ml-1 block mb-1.5;
+  }
+
+  .auth-card {
+    @apply bg-white rounded-3xl shadow-xl shadow-surface-200/50 p-8 border border-surface-100/50 relative;
+  }
+
+  .auth-divider {
+    @apply my-6 flex items-center;
+  }
+
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    @apply flex-1 border-t border-surface-200;
+  }
+
+  .auth-divider-text {
+    @apply mx-4 text-surface-400 text-[10px] font-bold tracking-[0.2em] uppercase;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-secondary-600;
+  }
+
+  .bg-glow {
+    @apply absolute -z-10 blur-[120px] opacity-30 rounded-full;
+  }
+}
+
+/* Custom Scrollbar - Light theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-300 rounded-full hover:bg-surface-400 transition-colors;
+}
+
+select::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease-out forwards;
+}
+
+.animate-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animate-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animate-delay-300 {
+  animation-delay: 300ms;
+}
+/* Add to your index.css */
+@keyframes slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-\[slide_2s_linear_infinite\] {
+  animation: slide 2s linear infinite;
+}
+/* Add to your index.css or global styles */
+@keyframes spin-reverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+.animate-spin-reverse {
+  animation: spin-reverse 3s linear infinite;
+}
