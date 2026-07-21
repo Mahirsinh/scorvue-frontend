@@ -41,7 +41,7 @@ export const useResumeAnalysis = ({ userId }: UseResumeAnalysisProps) => {
   useEffect(() => {
     if (!userId) return;
 
-    const BACKEND_URL = import.meta.env.VITE_API_URL.replace("/api", "");
+  const BACKEND_URL = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
     const socket: Socket = io(BACKEND_URL, {
       query: { userId },
       withCredentials: true,

@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import type { RootState } from "../app/store";
 import type { SocketUpdatePayload } from "../types/session";
 
-const BACKEND_URL = import.meta.env.VITE_API_URL.replace("/api", "");
+const BACKEND_URL = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
 
 const useSocket = () => {
     const navigate = useNavigate();
