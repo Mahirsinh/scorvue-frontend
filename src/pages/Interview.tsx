@@ -227,6 +227,72 @@ const ControlButton = ({
   );
 };
 
+// ✅ NEW: Custom End Interview Confirmation Modal (replaces window.confirm)
+const EndInterviewModal = ({
+  isOpen,
+  onCancel,
+  onConfirm,
+  isEnding,
+}: {
+  isOpen: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isEnding: boolean;
+}) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ scale: 0.95, y: 16 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 16 }}
+            className="bg-white rounded-2xl max-w-sm w-full border border-gray-200 shadow-2xl p-6"
+          >
+            <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+              <PhoneXMarkIcon className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              End Interview?
+            </h3>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              Are you sure you want to end the interview? Your progress will be saved and your review will be generated.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={onCancel}
+                disabled={isEnding}
+                className="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={isEnding}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isEnding ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Ending...
+                  </>
+                ) : (
+                  "End Interview"
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 // Get duration based on difficulty
 const getDurationForDifficulty = (difficulty: string): number => {
   switch (difficulty?.toLowerCase()) {
@@ -242,6 +308,11 @@ const getDurationForDifficulty = (difficulty: string): number => {
       return 15 * 60 * 1000; // Default 15 minutes
   }
 };
+
+// ✅ NEW: Max number of tab-switch / focus-loss violations allowed before termination
+const MAX_TAB_SWITCH_VIOLATIONS = 2;
+// ✅ NEW: Window (ms) to dedupe blur + visibilitychange firing for the SAME switch event
+const VIOLATION_DEDUPE_WINDOW_MS = 800;
 
 const Interview = () => {
   const navigate = useNavigate();
@@ -286,6 +357,18 @@ const Interview = () => {
   const [maxDuration, setMaxDuration] = useState<number>(15 * 60 * 1000); // Default
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isEnding, setIsEnding] = useState(false);
+
+  // ✅ NEW: End Interview confirmation modal state (replaces window.confirm)
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+
+  // ✅ NEW: Refs for robust tab-switch / focus-loss violation tracking
+  const violationCountRef = useRef(0);
+  const lastViolationTimeRef = useRef(0);
+  const cheatingNavigatedRef = useRef(false);
+  // Set true whenever WE cause a focus change on purpose (opening our own modal,
+  // ending the interview, requesting fullscreen, etc.) so the blur/visibility
+  // listeners don't misfire and treat it as cheating.
+  const ignoreFocusEventsRef = useRef(false);
 
   // ✅ Initialize Face Detection
   useEffect(() => {
@@ -436,6 +519,7 @@ if (hasFace && result.face && result.face.length > 0) {
     
     // Set cheating triggered flag to prevent multiple triggers
     setIsCheatingTriggered(true);
+    cheatingNavigatedRef.current = true;
     
     // Stop the interval to prevent multiple triggers
     if (faceDetectionIntervalRef.current) {
@@ -584,11 +668,34 @@ if (hasFace && result.face && result.face.length > 0) {
     },
   });
 
+  // ✅ NEW: Open the custom End Interview confirmation modal.
+  // We flag ignoreFocusEventsRef so opening the modal never gets
+  // misread as "focus lost -> cheating".
+  const openEndConfirm = useCallback(() => {
+    ignoreFocusEventsRef.current = true;
+    setShowEndConfirm(true);
+    // Release the guard shortly after — modal is now open and stable,
+    // any further real blur/visibility events should count again.
+    window.setTimeout(() => {
+      ignoreFocusEventsRef.current = false;
+    }, 500);
+  }, []);
+
+  const closeEndConfirm = useCallback(() => {
+    setShowEndConfirm(false);
+  }, []);
+
   // Handle end interview
   const handleEndInterview = async () => {
     if (!sessionId || isEnding) return;
 
+    // Guard against the blur/visibility listeners firing while we
+    // tear down audio/video/sockets below.
+    ignoreFocusEventsRef.current = true;
+    cheatingNavigatedRef.current = true; // no more cheating checks once we're ending on purpose
+
     setIsEnding(true);
+    setShowEndConfirm(false);
 
     try {
       // ✅ Cancel speech
@@ -633,6 +740,7 @@ if (hasFace && result.face && result.face.length > 0) {
       console.error("Error ending interview:", error);
       toast.error("Failed to end interview properly");
       setIsEnding(false);
+      ignoreFocusEventsRef.current = false;
     }
   };
 
@@ -815,6 +923,9 @@ if (hasFace && result.face && result.face.length > 0) {
   // Toggle fullscreen
   const toggleFullscreen = async () => {
     try {
+      // Fullscreen transitions can momentarily blur the window on some
+      // browsers/OSes — guard against a false cheating trigger.
+      ignoreFocusEventsRef.current = true;
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
         setIsFullscreen(true);
@@ -822,46 +933,67 @@ if (hasFace && result.face && result.face.length > 0) {
         await document.exitFullscreen();
         setIsFullscreen(false);
       }
+      window.setTimeout(() => {
+        ignoreFocusEventsRef.current = false;
+      }, 500);
     } catch (err) {
       console.log('Fullscreen toggle error:', err);
+      ignoreFocusEventsRef.current = false;
     }
   };
 
-  // ✅ Cheating detection - Navigate to cheating page when tab is hidden
+  // ✅ UPDATED: Cheating detection with a 2-strike system.
+  // 1st tab-switch / focus-loss -> warning toast.
+  // 2nd tab-switch / focus-loss -> navigate to /cheating.
+  // blur + visibilitychange firing for the SAME switch are deduped via a time window.
   useEffect(() => {
     if (!interviewStarted) return;
 
-    let cheatingDetected = false;
+    const registerViolation = (reason: string) => {
+      // Already ending or already navigated away for cheating — ignore.
+      if (isEnding || isCheatingTriggered || cheatingNavigatedRef.current) return;
+      // We caused this focus change ourselves (opening a modal, ending
+      // the interview, toggling fullscreen, requesting camera, etc.)
+      if (ignoreFocusEventsRef.current) return;
+
+      const now = Date.now();
+      // blur and visibilitychange commonly fire together for the same
+      // tab-switch — treat anything within the dedupe window as one event.
+      if (now - lastViolationTimeRef.current < VIOLATION_DEDUPE_WINDOW_MS) {
+        return;
+      }
+      lastViolationTimeRef.current = now;
+      violationCountRef.current += 1;
+
+      const count = violationCountRef.current;
+
+      if (count >= MAX_TAB_SWITCH_VIOLATIONS) {
+        cheatingNavigatedRef.current = true;
+        setIsCheatingTriggered(true);
+        toast.error("⚠️ Multiple tab/window switches detected! Interview terminated.");
+        navigate("/cheating", {
+          state: {
+            from: "interview",
+            sessionId,
+            reason: `${reason} (${count}/${MAX_TAB_SWITCH_VIOLATIONS} violations)`,
+          },
+        });
+      } else {
+        toast.warning(
+          `⚠️ Warning ${count}/${MAX_TAB_SWITCH_VIOLATIONS}: ${reason}. One more violation will end your interview.`
+        );
+      }
+    };
 
     const handleVisibilityChange = () => {
-      if (document.hidden && !cheatingDetected) {
-        cheatingDetected = true;
-        toast.error("⚠️ Tab switching detected! Interview terminated.");
-        
-        // Navigate to cheating page
-        navigate("/cheating", { 
-          state: { 
-            from: "interview",
-            sessionId: sessionId,
-            reason: "Tab switching detected during interview"
-          } 
-        });
+      if (document.hidden) {
+        registerViolation("Tab switching or window minimized detected");
       }
     };
 
     // Also detect window blur (switching to another app)
     const handleBlur = () => {
-      if (!cheatingDetected) {
-        cheatingDetected = true;
-        toast.error("⚠️ Window focus lost! Interview terminated.");
-        navigate("/cheating", { 
-          state: { 
-            from: "interview",
-            sessionId: sessionId,
-            reason: "Window focus lost during interview"
-          } 
-        });
-      }
+      registerViolation("Window focus lost");
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -871,7 +1003,7 @@ if (hasFace && result.face && result.face.length > 0) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [interviewStarted, navigate, sessionId]);
+  }, [interviewStarted, navigate, sessionId, isEnding, isCheatingTriggered]);
 
   if (isLoading) {
     return (
@@ -919,7 +1051,7 @@ if (hasFace && result.face && result.face.length > 0) {
                     { icon: VideoCameraIcon, text: "Keep your camera on for a personal connection", color: "text-sky-500", bg: "bg-sky-50" },
                     { icon: MicrophoneIcon, text: "Speak naturally - AI will listen and respond", color: "text-teal-600", bg: "bg-teal-50" },
                     { icon: ChatBubbleLeftRightIcon, text: "Conversation flows like a real interview", color: "text-violet-500", bg: "bg-violet-50" },
-                    { icon: ExclamationTriangleIcon, text: "Stay focused - don't switch tabs or apps", color: "text-amber-500", bg: "bg-amber-50" },
+                    { icon: ExclamationTriangleIcon, text: "Stay focused - switching tabs/apps twice will end your interview", color: "text-amber-500", bg: "bg-amber-50" },
                     { icon: ShieldCheckIcon, text: "Professional and friendly environment", color: "text-indigo-500", bg: "bg-indigo-50" },
                   ].map((rule, index) => (
                     <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -950,6 +1082,14 @@ if (hasFace && result.face && result.face.length > 0) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ✅ NEW: End Interview Confirmation Modal (replaces window.confirm) */}
+      <EndInterviewModal
+        isOpen={showEndConfirm}
+        onCancel={closeEndConfirm}
+        onConfirm={handleEndInterview}
+        isEnding={isEnding}
+      />
 
       {/* Main Interview Interface */}
       <div className="flex flex-col h-screen">
@@ -1113,11 +1253,7 @@ if (hasFace && result.face && result.face.length > 0) {
               icon={PhoneXMarkIcon}
               label="End"
               variant="danger"
-              onClick={() => {
-                if (window.confirm("Are you sure you want to end the interview? Your progress will be saved for review.")) {
-                  handleEndInterview();
-                }
-              }}
+              onClick={openEndConfirm}
               disabled={isEnding}
             />
           </div>
