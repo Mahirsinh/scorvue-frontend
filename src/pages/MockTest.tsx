@@ -27,45 +27,46 @@ const DEFAULT_FORM_DATA: MockTestFormData = {
   resumeId: "",
 };
 
-const MockTest = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState<MockTestFormData>(DEFAULT_FORM_DATA);
-  const [isProcessing, setIsProcessing] = useState(false);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (isProcessing) return;
+  if (!formData.role) {
+    toast.error("Please choose a role before starting.");
+    return;
+  }
+  setIsProcessing(true);
+  try {
+    const { data } = await interviewApi.createPreference({
+      interviewType: formData.interviewType,
+      role: formData.role,
+      experienceLevel: formData.level,
+      difficulty: formData.level, // or a separate difficulty field if you track one
+      language: "english",        // or whatever default/selection you use
+      focusAreas: [],              // populate if the form collects this elsewhere
+      resumeFileId: formData.resumeId || null,
+      permissions: {
+        camera: false,
+        microphone: false,
+        speaker: false,
+      },
+    });
 
-  // NewInterviewForm calls onChange({ target: { name, value } }) for both
-  // native <select> events and its own handleCustomChange helper.
-  const handleChange = (e: { target: { name: string; value: string | number } }) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isProcessing) return;
-    if (!formData.role) {
-      toast.error("Please choose a role before starting.");
+    const sessionId = data?.sessionId || data?._id;
+    if (!sessionId) {
+      throw new Error("No session ID returned");
+    }
+    navigate(`/interview/${sessionId}`);
+  } catch (error: any) {
+    console.error("Failed to start mock test:", error);
+    if (error?.response?.data?.error?.code === "UPGRADE_REQUIRED") {
+      toast.warning(error.response.data.error.message || "You've used your free interview.");
+      navigate("/plans");
       return;
     }
-
-    setIsProcessing(true);
-    try {
-      const { data } = await interviewApi.createSession(formData);
-      const sessionId = data?.sessionId || data?._id;
-      if (!sessionId) {
-        throw new Error("No session ID returned");
-      }
-      navigate(`/interview/${sessionId}`);
-    } catch (error: any) {
-      console.error("Failed to start mock test:", error);
-      if (error?.response?.data?.error?.code === "UPGRADE_REQUIRED") {
-        toast.warning(error.response.data.error.message || "You've used your free interview.");
-        navigate("/plans");
-        return;
-      }
-      toast.error(error?.response?.data?.message || "Failed to start your mock test. Please try again.");
-      setIsProcessing(false);
-    }
-  };
+    toast.error(error?.response?.data?.message || "Failed to start your mock test. Please try again.");
+    setIsProcessing(false);
+  }
+};
 
   return (
     <div className="max-w-4xl mx-auto py-4">
