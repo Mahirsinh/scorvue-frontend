@@ -3,78 +3,38 @@ import { Link } from "react-router-dom";
 import { UserProfileMenu } from "./UserProfileMenu";
 
 interface DesktopNavProps {
-  user: { name: string; picture?: string; email?: string; plan?: string } | null; // ✅ plan added
+  user: { name: string; picture?: string; email?: string; plan?: string } | null;
   isActive: (path: string) => boolean;
   onOpenModal: () => void;
 }
 
+const navLinks = [
+  { to: "/", label: "Dashboard" },
+  { to: "/resume-analyzer", label: "Resume Analyzer" },
+  { to: "/live-interview/preferences", label: "Live AI Interview" },
+  { to: "/analytics", label: "Analytics" },
+];
+
 export const DesktopNav = ({ user, isActive, onOpenModal }: DesktopNavProps) => {
   return (
-    <nav className="hidden md:flex items-center space-x-8">
+    <nav className="hidden md:flex items-center gap-6">
       {user ? (
         <>
-          <Link
-            to="/"
-            className={`relative py-1 text-sm font-medium transition-all duration-300 group ${
-              isActive("/") 
-                ? "text-blue-600" 
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-          >
-            Dashboard
-            <span
-              className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500 ${
-                isActive("/") ? "w-full" : "w-0 group-hover:w-full"
-              }`}
-            ></span>
-          </Link>
-
-          <Link
-            to="/resume-analyzer"
-            className={`relative py-1 text-sm font-medium transition-all duration-300 group ${
-              isActive("/resume-analyzer")
-                ? "text-blue-600"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-          >
-            Resume Analyzer
-            <span
-              className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500 ${
-                isActive("/resume-analyzer") ? "w-full" : "w-0 group-hover:w-full"
-              }`}
-            ></span>
-          </Link>
-    <Link
-            to="/live-interview/preferences"
-            className={`relative py-1 text-sm font-medium transition-all duration-300 group ${
-              isActive("/live-interview/preferences")
-                ? "text-blue-600"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-          >
-            Live AI Interview
-            <span
-              className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500 ${
-                isActive("/live-interview/preferences") ? "w-full" : "w-0 group-hover:w-full"
-              }`}
-            ></span>
-          </Link>
-          <Link
-            to="/analytics"
-            className={`relative py-1 text-sm font-medium transition-all duration-300 group ${
-              isActive("/analytics")
-                ? "text-blue-600"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-          >
-            Analytics
-            <span
-              className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500 ${
-                isActive("/analytics") ? "w-full" : "w-0 group-hover:w-full"
-              }`}
-            ></span>
-          </Link>
-
+          <div className="flex items-center gap-1 bg-gray-100/70 rounded-full p-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ${
+                  isActive(link.to)
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/60"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
           <UserProfileMenu user={user} onOpenModal={onOpenModal} />
         </>
       ) : (
