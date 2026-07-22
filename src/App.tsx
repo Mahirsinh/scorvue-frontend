@@ -112,7 +112,7 @@ function App() {
                   {/* ✅ Add the new route here */}
                   <Route path="/live-interview/preferences" element={<InterviewPreferences />} />
                   {/* ✅ Mock test entry point */}
-                  <Route path="/mock" element={<NewInterviewForm />} />
+                  <Route path="/mock" element={<MockTest />} />
                 </Route>
                 
                 <Route path="/profile" element={<PrivateRoute />}>
