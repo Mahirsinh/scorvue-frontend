@@ -17,6 +17,7 @@ const InterviewRunner = () => {
     const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
     const [isWhiteboardOpen, setIsWhiteboardOpen] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
+    const [isAdvancing, setIsAdvancing] = useState(false);
 
     const {
         isRecording,
@@ -66,6 +67,35 @@ const InterviewRunner = () => {
 
     const currentDraft = drafts[currentQuestionIndex] || {};
     const isCodingQuestion = currentQuestion?.questionType === 'coding';
+    const isLastQuestion = currentQuestionIndex === (activeSession.questions.length || 0) - 1;
+    const busy = isAdvancing || isProcessing || isFinishing;
+
+    // Submits the current answer (if it isn't already locked/evaluated), then
+    // either moves to the next question or — on the last question — finishes
+    // the interview automatically. No separate "Submit" step for the user.
+    const handleNext = async () => {
+        if (busy) return;
+        setIsAdvancing(true);
+        try {
+            if (!isQuestionLocked && !currentQuestion?.isEvaluated) {
+                await handleSubmitAnswer();
+            }
+            if (isLastQuestion) {
+                await handleConfirmFinish();
+            } else {
+                handleNavigation(currentQuestionIndex + 1);
+            }
+        } catch (error) {
+            console.error("Failed to submit/advance:", error);
+            alert("Something went wrong submitting your answer. Please try again.");
+        } finally {
+            setIsAdvancing(false);
+        }
+    };
+
+    const nextLabel = busy
+        ? (isLastQuestion ? 'Finishing...' : 'Submitting...')
+        : (isLastQuestion ? 'Finish Interview →' : 'Next →');
 
     return (
         <div className="max-w-7xl mx-auto px-4 pb-32">
@@ -159,49 +189,47 @@ const InterviewRunner = () => {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-xl p-4 px-6 md:px-12 flex justify-between items-center z-50">
                 <button
                     onClick={() => handleNavigation(currentQuestionIndex - 1)}
-                    disabled={currentQuestionIndex === 0}
+                    disabled={currentQuestionIndex === 0 || busy}
                     className="text-gray-500 font-bold text-xs uppercase tracking-wider hover:text-gray-700 disabled:opacity-30 cursor-pointer transition-colors"
                 >
                     ← Back
                 </button>
 
-                <div className="flex flex-col items-center">
-                    {isProcessing && sessionMessage && (
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-4 py-2 rounded-full animate-pulse border border-blue-200 shadow-sm">
+                <div className="relative flex flex-col items-center">
+                    {busy && sessionMessage && (
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-4 py-2 rounded-full animate-pulse border border-blue-200 shadow-sm whitespace-nowrap">
                             {sessionMessage}...
                         </div>
                     )}
 
                     <button
-                        onClick={handleSubmitAnswer}
-                        disabled={isQuestionLocked}
+                        onClick={handleNext}
+                        disabled={busy}
                         className={`px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] ${
-                            isProcessing 
-                                ? 'bg-gray-200 text-gray-500 cursor-wait' 
-                                : currentQuestion?.isEvaluated 
-                                ? 'bg-emerald-500 text-white shadow-emerald-500/30 hover:bg-emerald-600' 
-                                : isQuestionLocked 
-                                ? 'bg-gray-200 text-gray-500' 
+                            busy
+                                ? 'bg-gray-200 text-gray-500 cursor-wait'
+                                : isLastQuestion
+                                ? 'bg-emerald-500 text-white shadow-emerald-500/30 hover:bg-emerald-600 hover:-translate-y-0.5 cursor-pointer'
                                 : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-500/30 hover:shadow-xl hover:-translate-y-0.5 cursor-pointer'
                         }`}
                     >
-                        {isProcessing ? 'Analyzing...' : currentQuestion?.isEvaluated ? '✓ Submitted' : isQuestionLocked ? 'Locked' : 'Submit Answer'}
+                        {nextLabel}
                     </button>
                 </div>
 
                 <button
-                    onClick={() => handleNavigation(currentQuestionIndex + 1)}
-                    disabled={currentQuestionIndex === (activeSession?.questions?.length || 0) - 1}
+                    onClick={() => setIsFinishModalOpen(true)}
+                    disabled={busy}
                     className="text-gray-500 font-bold text-xs uppercase tracking-wider hover:text-gray-700 disabled:opacity-30 cursor-pointer transition-colors"
                 >
-                    Next →
+                    End Early
                 </button>
             </div>
 
             <ConfirmModal
                 isOpen={isFinishModalOpen}
                 title="Finish Interview?"
-                message="Are you sure you want to end this interview session? You won't be able to change your answers after this."
+                message="Are you sure you want to end this interview session now? You won't be able to change your answers after this."
                 confirmText="Finish"
                 cancelText="Keep Going"
                 onConfirm={handleConfirmFinish}
