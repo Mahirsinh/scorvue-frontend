@@ -29,7 +29,7 @@ const LiveAIInterview = ({ userName }: LiveAIInterviewProps) => {
   };
 
   const handleMockTest = () => {
-    navigate('/mocktest');
+    navigate('/mock');
   };
 
   const features = [
