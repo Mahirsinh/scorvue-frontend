@@ -13,6 +13,9 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import InterviewRunner from "./pages/InterviewRunner";
 import SessionReview from "./pages/SessionReview";
+
+import MockTest from "./pages/MockTest";
+
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
 import NotFound from "./pages/NotFound";
@@ -109,7 +112,7 @@ function App() {
                   {/* ✅ Add the new route here */}
                   <Route path="/live-interview/preferences" element={<InterviewPreferences />} />
                   {/* ✅ Mock test entry point */}
-                  <Route path="/mocktest" element={<NewInterviewForm />} />
+                  <Route path="/mock" element={<MockTest />} />
                 </Route>
                 
                 <Route path="/profile" element={<PrivateRoute />}>
