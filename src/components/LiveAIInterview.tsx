@@ -13,6 +13,7 @@ import {
   VideoCameraIcon,
   CpuChipIcon,
   StarIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import bannerImage from "../assets/interviewcompo-img.png"; // adjust path as needed
 
@@ -25,6 +26,10 @@ const LiveAIInterview = ({ userName }: LiveAIInterviewProps) => {
 
   const handleStartInterview = () => {
     navigate('/live-interview/preferences');
+  };
+
+  const handleMockTest = () => {
+    navigate('/mocktest');
   };
 
   const features = [
@@ -135,21 +140,34 @@ const LiveAIInterview = ({ userName }: LiveAIInterviewProps) => {
             ))}
           </motion.div>
 
-          {/* CTA Button */}
-          <motion.button
+          {/* CTA Buttons */}
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.7 }}
-            onClick={handleStartInterview}
-            className="group relative inline-flex items-center gap-3 w-fit px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 font-bold rounded-2xl shadow-lg shadow-yellow-500/30 hover:shadow-xl hover:shadow-yellow-500/40 transition-all duration-300 hover:-translate-y-0.5"
+            className="flex flex-wrap items-center gap-3"
           >
-            <PlayIcon className="w-5 h-5" />
-            <span className="text-sm tracking-wide">Start Free Interview</span>
-            <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full animate-pulse">
-              LIVE
-            </span>
-          </motion.button>
+            <button
+              onClick={handleStartInterview}
+              className="group relative inline-flex items-center gap-3 w-fit px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 font-bold rounded-2xl shadow-lg shadow-yellow-500/30 hover:shadow-xl hover:shadow-yellow-500/40 transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <PlayIcon className="w-5 h-5" />
+              <span className="text-sm tracking-wide">Start Live Interview</span>
+              <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full animate-pulse">
+                LIVE
+              </span>
+            </button>
+
+            <button
+              onClick={handleMockTest}
+              className="group inline-flex items-center gap-3 w-fit px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-2xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <DocumentTextIcon className="w-5 h-5" />
+              <span className="text-sm tracking-wide">Attempt a Mock Test</span>
+              <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </motion.div>
 
           <p className="text-[10px] text-blue-200/50 flex items-center gap-1">
             <ClockIcon className="w-3 h-3" />
