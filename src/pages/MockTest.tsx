@@ -4,9 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import NewInterviewForm from "../components/NewInterviewForm";
 import { interviewApi } from "../services/interviewApi";
+import { LEVELS } from "../constants/interview";
 
-// Shape mirrors what NewInterviewForm reads/writes via formData + onChange.
-// Adjust field names here if your backend/session creation expects different keys.
 interface MockTestFormData {
   role: string;
   level: string;
@@ -19,9 +18,9 @@ interface MockTestFormData {
 
 const DEFAULT_FORM_DATA: MockTestFormData = {
   role: "",
-  level: "mid",
+  level: LEVELS[0], // "Fresher" — a real option from the same constant the dropdown uses
   count: 5,
-  interviewType: "oral-only",
+  interviewType: "oral-only", // ⚠️ still unverified against backend enum — see note above
   company: "general",
   companyTrack: "general",
   resumeId: "",
@@ -32,8 +31,6 @@ const MockTest = () => {
   const [formData, setFormData] = useState<MockTestFormData>(DEFAULT_FORM_DATA);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // NewInterviewForm calls onChange({ target: { name, value } }) for both
-  // native <select> events and its own handleCustomChange helper.
   const handleChange = (e: { target: { name: string; value: string | number } }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -50,16 +47,13 @@ const MockTest = () => {
 
     setIsProcessing(true);
     try {
-      // interviewApi has no `createSession` — the real method is
-      // `createPreference`, which expects the InterviewPreferenceData shape.
-      // Map MockTest's simpler formData onto that shape here.
       const { data } = await interviewApi.createPreference({
-        interviewType: formData.interviewType,
+        interviewType: formData.interviewType, // ⚠️ confirm against backend enum
         role: formData.role,
-        experienceLevel: formData.level,
-        difficulty: formData.level, // no separate difficulty field in this form yet
-        language: "english", // hardcode/replace if the form later collects this
-        focusAreas: [], // populate if company/track should map to focus areas
+        experienceLevel: formData.level, // now a real LEVELS value, e.g. "Fresher"
+        difficulty: formData.level,      // ⚠️ confirm backend expects the same string here
+        language: "english",
+        focusAreas: [],
         resumeFileId: formData.resumeId || null,
         permissions: {
           camera: false,
