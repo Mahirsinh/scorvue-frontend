@@ -13,6 +13,7 @@ const navLinks = [
   { to: "/resume-analyzer", label: "Resume Analyzer" },
   { to: "/live-interview/preferences", label: "Live AI Interview" },
   { to: "/analytics", label: "Analytics" },
+  { to: "/plans", label: "Plans" },
 ];
 
 export const DesktopNav = ({ user, isActive, onOpenModal }: DesktopNavProps) => {
