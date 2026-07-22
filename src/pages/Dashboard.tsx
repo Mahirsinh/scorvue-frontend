@@ -321,13 +321,7 @@ const viewSession = (session: Session) => {
     transition={{ delay: 0.2 }}
     className="relative group"
 >
-    <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition duration-700"></div>
-    <NewInterviewForm
-        formData={formData}
-        onChange={onChange}
-        onSubmit={onSubmit}
-        isProcessing={isProcessing}
-    />
+ 
 </motion.div>
 
 {/* Spacer */}
