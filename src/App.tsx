@@ -39,6 +39,7 @@ import Cheating from "./pages/Cheating";
 import History from "./pages/History";
 import Landing from "./pages/Landing";
 import Plan from "./pages/Plan";
+import NewInterviewForm from "./components/NewInterviewForm"; // ✅ Mock test form
 
 function App() {
   useSocket();
@@ -107,6 +108,8 @@ function App() {
                       <Route path="/cheating" element={<Cheating />} />
                   {/* ✅ Add the new route here */}
                   <Route path="/live-interview/preferences" element={<InterviewPreferences />} />
+                  {/* ✅ Mock test entry point */}
+                  <Route path="/mocktest" element={<NewInterviewForm />} />
                 </Route>
                 
                 <Route path="/profile" element={<PrivateRoute />}>
