@@ -130,7 +130,7 @@ const History = () => {
   }, [searchTerm, filterStatus, filterVerdict, interviews]);
 
   const handleViewReview = (sessionId: string) => {
-    navigate(`/review/${sessionId}`);
+    navigate(`/review-interview/${sessionId}`);
   };
 
   const handleDeleteReview = async (sessionId: string, e: React.MouseEvent) => {
