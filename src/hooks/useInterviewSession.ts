@@ -178,24 +178,22 @@ export const useInterviewSession = (stopRecording: () => void, setRecordingTime:
         if (audio) formData.append("audio", audio, 'audio.webm');
         if (diagramImageUrl) formData.append("diagramImageUrl", diagramImageUrl);
 
-        dispatch(submitAnswer({ sessionId, formData })).unwrap().catch(() => {
+        try {
+            // Awaiting + throwing on failure matters here: InterviewRunner awaits
+            // this call and needs to know submission was actually accepted before
+            // it advances/finishes. NOTE: this only confirms the submit request
+            // succeeded — the AI evaluation itself (transcription/scoring) runs
+            // async server-side afterward and arrives later via a socket-driven
+            // session update (currentQuestion.isEvaluated flipping to true), not
+            // as part of this call resolving.
+            await dispatch(submitAnswer({ sessionId, formData })).unwrap();
+        } catch (err) {
             setSubmittedLocal(prev => ({
                 ...prev, [currentQuestionIndex]: false
             }));
             toast.error("Failed to submit answer. Please try again.");
-        });
-    };
-
-    const confirmFinishInterview = async () => {
-        if (!sessionId) return;
-        return dispatch(endSession(sessionId)).unwrap().then(() => {
-            localStorage.removeItem(`draft_code_${sessionId}`);
-            deleteDrafts(sessionId);
-            navigate(`/review/${sessionId}`);
-            toast.success("Interview ended successfully.");
-        }).catch(() => {
-            toast.error("Failed to end interview. Please try again.");
-        });
+            throw err;
+        }
     };
 
     return {
