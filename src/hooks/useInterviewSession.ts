@@ -195,6 +195,17 @@ export const useInterviewSession = (stopRecording: () => void, setRecordingTime:
             throw err;
         }
     };
+const confirmFinishInterview = async () => {
+        if (!sessionId) return;
+        return dispatch(endSession(sessionId)).unwrap().then(() => {
+            localStorage.removeItem(`draft_code_${sessionId}`);
+            deleteDrafts(sessionId);
+            navigate(`/review/${sessionId}`);
+            toast.success("Interview ended successfully.");
+        }).catch(() => {
+            toast.error("Failed to end interview. Please try again.");
+        });
+    };
 
     return {
         sessionId,
