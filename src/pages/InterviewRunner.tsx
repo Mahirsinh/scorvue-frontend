@@ -1,5 +1,5 @@
 // InterviewRunner.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAudioRecorder } from "../hooks/useAudioRecorder";
 import { useInterviewSession } from "../hooks/useInterviewSession";
 
@@ -13,11 +13,17 @@ import AIFeedbackSection from "../components/AIFeedbackSection";
 import InterviewLoading from "../components/InterviewLoading";
 import WhiteboardModal from "../components/WhiteboardModal";
 
+const FINAL_EVAL_TIMEOUT_MS = 30000;
+
 const InterviewRunner = () => {
     const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
     const [isWhiteboardOpen, setIsWhiteboardOpen] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
     const [isAdvancing, setIsAdvancing] = useState(false);
+    // True while we've submitted the LAST question's answer and are waiting
+    // for its AI evaluation to come back (via socket -> Redux) before we're
+    // allowed to call /end. This is what the old bug was missing.
+    const [awaitingFinalEval, setAwaitingFinalEval] = useState(false);
 
     const {
         isRecording,
@@ -61,6 +67,30 @@ const InterviewRunner = () => {
         }
     };
 
+    // Watches for the last question's evaluation to complete. currentQuestion
+    // comes from Redux state that a socket handler updates elsewhere in the
+    // app, so this effect re-runs whenever that update lands and re-renders
+    // this component — that's the actual signal that "evaluation completed".
+    useEffect(() => {
+        if (!awaitingFinalEval) return;
+
+        if (currentQuestion?.isEvaluated) {
+            setAwaitingFinalEval(false);
+            setIsAdvancing(false);
+            handleConfirmFinish();
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setAwaitingFinalEval(false);
+            setIsAdvancing(false);
+            alert("Evaluation is taking longer than expected. Please try clicking Finish again in a moment.");
+        }, FINAL_EVAL_TIMEOUT_MS);
+
+        return () => window.clearTimeout(timeoutId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [awaitingFinalEval, currentQuestion?.isEvaluated]);
+
     if (!activeSession || !activeSession.questions || activeSession.questions.length === 0 || isFinishing) {
         return <InterviewLoading sessionMessage={isFinishing ? "Finalizing Interview..." : sessionMessage} />;
     }
@@ -68,20 +98,29 @@ const InterviewRunner = () => {
     const currentDraft = drafts[currentQuestionIndex] || {};
     const isCodingQuestion = currentQuestion?.questionType === 'coding';
     const isLastQuestion = currentQuestionIndex === (activeSession.questions.length || 0) - 1;
-    const busy = isAdvancing || isProcessing || isFinishing;
+    const busy = isAdvancing || isProcessing || isFinishing || awaitingFinalEval;
 
     // Submits the current answer (if it isn't already locked/evaluated), then
     // either moves to the next question or — on the last question — finishes
-    // the interview automatically. No separate "Submit" step for the user.
+    // the interview. On the last question we do NOT call /end immediately:
+    // we submit, then wait (via the effect above) for that question's
+    // evaluation to actually land before finishing, since evaluation happens
+    // asynchronously server-side after the submit request resolves.
     const handleNext = async () => {
         if (busy) return;
         setIsAdvancing(true);
+        let willWaitForFinish = false;
         try {
             if (!isQuestionLocked && !currentQuestion?.isEvaluated) {
                 await handleSubmitAnswer();
             }
             if (isLastQuestion) {
-                await handleConfirmFinish();
+                if (currentQuestion?.isEvaluated) {
+                    await handleConfirmFinish();
+                } else {
+                    willWaitForFinish = true;
+                    setAwaitingFinalEval(true);
+                }
             } else {
                 handleNavigation(currentQuestionIndex + 1);
             }
@@ -89,12 +128,12 @@ const InterviewRunner = () => {
             console.error("Failed to submit/advance:", error);
             alert("Something went wrong submitting your answer. Please try again.");
         } finally {
-            setIsAdvancing(false);
+            if (!willWaitForFinish) setIsAdvancing(false);
         }
     };
 
     const nextLabel = busy
-        ? (isLastQuestion ? 'Finishing...' : 'Submitting...')
+        ? (isLastQuestion || awaitingFinalEval ? 'Finishing...' : 'Submitting...')
         : (isLastQuestion ? 'Finish Interview →' : 'Next →');
 
     return (
@@ -196,9 +235,9 @@ const InterviewRunner = () => {
                 </button>
 
                 <div className="relative flex flex-col items-center">
-                    {busy && sessionMessage && (
+                    {busy && (
                         <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-4 py-2 rounded-full animate-pulse border border-blue-200 shadow-sm whitespace-nowrap">
-                            {sessionMessage}...
+                            {awaitingFinalEval ? 'Waiting for final evaluation...' : (sessionMessage ? `${sessionMessage}...` : '')}
                         </div>
                     )}
 
